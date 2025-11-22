@@ -17,6 +17,7 @@ Thumbs.db
 /tests/_output/
 /tests/_support/_generated/
 /tests/_app/runtime/
+c3.php
 
 # Cache
 /runtime/

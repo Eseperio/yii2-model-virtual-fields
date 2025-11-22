@@ -15,9 +15,10 @@
         "yiisoft/yii2": "~2.0.14"
     },
     "require-dev": {
-        "codeception/codeception": "^4.0",
+        "codeception/codeception": "^4.0 || ^5.0",
         "codeception/module-yii2": "^1.0",
-        "codeception/module-asserts": "^1.0"
+        "codeception/module-asserts": "^1.0 || ^3.0",
+        "yidas/yii2-bower-asset": "2.0.13"
     },
     "autoload": {
         "psr-4": {
@@ -26,7 +27,8 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "eseperio\\virtualfields\\tests\\": "tests/"
+            "eseperio\\virtualfields\\tests\\": "tests/",
+            "tests\\": "tests/"
         }
     },
     "scripts": {
@@ -36,5 +38,10 @@
     },
     "extra": {
         "bootstrap": "eseperio\\virtualfields\\Module"
+    },
+    "config": {
+        "allow-plugins": {
+            "yiisoft/yii2-composer": true
+        }
     }
 }

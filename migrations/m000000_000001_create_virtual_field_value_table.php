@@ -14,23 +14,25 @@ class m000000_000001_create_virtual_field_value_table extends Migration
     {
         $this->createTable('{{%virtual_field_value}}', [
             'id' => $this->primaryKey(),
-            'definition_id' => $this->integer()->notNull()->comment('Reference to virtual_field_definition'),
-            'entity_type' => $this->integer()->notNull()->comment('Integer identifier for the entity type'),
-            'entity_id' => $this->integer()->notNull()->comment('ID of the entity instance'),
-            'value' => $this->text()->comment('The actual field value (stored as text, cast according to data_type)'),
+            'definition_id' => $this->integer()->notNull(),
+            'entity_type' => $this->integer()->notNull(),
+            'entity_id' => $this->integer()->notNull(),
+            'value' => $this->text(),
             'created_at' => $this->integer()->notNull(),
             'updated_at' => $this->integer()->notNull(),
         ]);
 
-        // Create foreign key to virtual_field_definition
-        $this->addForeignKey(
-            'fk-virtual_field_value-definition_id',
-            '{{%virtual_field_value}}',
-            'definition_id',
-            '{{%virtual_field_definition}}',
-            'id',
-            'CASCADE'
-        );
+        // Add foreign key (skip for SQLite as it doesn't support adding FK after table creation)
+        if ($this->db->driverName !== 'sqlite') {
+            $this->addForeignKey(
+                'fk-virtual_field_value-definition_id',
+                '{{%virtual_field_value}}',
+                'definition_id',
+                '{{%virtual_field_definition}}',
+                'id',
+                'CASCADE'
+            );
+        }
 
         // Create unique index for entity_type, entity_id, and definition_id combination
         // This ensures one value per field per entity instance
