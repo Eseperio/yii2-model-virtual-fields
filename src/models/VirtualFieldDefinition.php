@@ -55,7 +55,7 @@ class VirtualFieldDefinition extends ActiveRecord
             [['entity_type', 'name', 'data_type'], 'required'],
             [['entity_type'], 'integer'],
             [['required', 'multiple', 'active'], 'boolean'],
-            [['options', 'default_value', 'value'], 'string'],
+            [['options', 'default_value'], 'string'],
             [['name'], 'string', 'max' => 64],
             [['label'], 'string', 'max' => 255],
             [['data_type'], 'string', 'max' => 32],
