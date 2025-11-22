@@ -335,6 +335,41 @@ Field definitions are cached for performance. Cache is automatically invalidated
 - Choose different field names that don't conflict with existing properties
 - Review the validation error message for specific conflicts
 
+## Testing
+
+This library includes comprehensive functional tests using Codeception and SQLite.
+
+### Running Tests
+
+1. Install dependencies:
+```bash
+composer install
+```
+
+2. Run migrations to set up the test database:
+```bash
+composer test-migrate
+```
+
+3. Run functional tests:
+```bash
+composer test-functional
+```
+
+### Migration Structure
+
+The library has two sets of migrations:
+
+- **`migrations/`** - Library migrations (virtual field tables)
+  - `m000000_000000_create_virtual_field_definition_table.php`
+  - `m000000_000001_create_virtual_field_value_table.php`
+
+- **`tests/_app/migrations/`** - Test app migrations (test models)
+  - `m000000_000002_create_test_model_table.php`
+  - `m000000_000003_create_product_table.php`
+
+The `composer test-migrate` script runs both sets of migrations in the correct order.
+
 ## License
 
 MIT

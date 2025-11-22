@@ -38,6 +38,14 @@
     }
   },
   "scripts": {
+    "test-migrate": [
+      "php tests/_app/yii migrate --migrationPath=migrations --interactive=0",
+      "php tests/_app/yii migrate --migrationPath=tests/_app/migrations --interactive=0"
+    ],
+    "test-migrate-down": [
+      "php tests/_app/yii migrate/down --migrationPath=tests/_app/migrations --interactive=0",
+      "php tests/_app/yii migrate/down --migrationPath=migrations --interactive=0"
+    ],
     "test-functional": "codecept run functional",
     "serve": [
       "php tests/_app/yii serve"
