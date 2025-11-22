@@ -7,6 +7,7 @@ use tests\_app\models\TestModel;
 use eseperio\virtualfields\models\VirtualFieldDefinition;
 use eseperio\virtualfields\models\VirtualFieldValue;
 use Yii;
+use FunctionalTester;
 
 class ValidationAndEdgeCasesCest
 {

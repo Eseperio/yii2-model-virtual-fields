@@ -4,6 +4,5 @@ modules:
         - Asserts
         - Yii2:
             configFile: 'tests/_app/config/web.php'
-            entryScript: 'tests/_app/index.php'
             transaction: true
             cleanup: true

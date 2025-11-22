@@ -1,4 +1,5 @@
 actor: Tester
+bootstrap: _app/bootstrap.php
 paths:
     tests: tests
     output: tests/_output

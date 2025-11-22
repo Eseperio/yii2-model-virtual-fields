@@ -10,6 +10,7 @@ use eseperio\virtualfields\helpers\VirtualFieldRenderer;
 use eseperio\virtualfields\helpers\DetailViewHelper;
 use eseperio\virtualfields\helpers\GridViewHelper;
 use Yii;
+use FunctionalTester;
 
 class ViewIntegrationCest
 {

@@ -6,6 +6,7 @@ use Codeception\Test\Unit;
 use tests\_app\models\Product;
 use eseperio\virtualfields\models\VirtualFieldDefinition;
 use eseperio\virtualfields\models\VirtualFieldValue;
+use FunctionalTester;
 
 class DataTypeHandlingCest
 {
