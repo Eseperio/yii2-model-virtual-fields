@@ -121,4 +121,34 @@ class VirtualFieldDefinition extends ActiveRecord
     {
         $this->options = json_encode($options);
     }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function afterSave($insert, $changedAttributes)
+    {
+        parent::afterSave($insert, $changedAttributes);
+        $this->invalidateCache();
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function afterDelete()
+    {
+        parent::afterDelete();
+        $this->invalidateCache();
+    }
+
+    /**
+     * Invalidate cached definitions for this entity type
+     */
+    protected function invalidateCache()
+    {
+        $cache = \Yii::$app->getCache();
+        if ($cache) {
+            $cache->delete("virtualfields:definitions:{$this->entity_type}:active");
+            $cache->delete("virtualfields:definitions:{$this->entity_type}:all");
+        }
+    }
 }
