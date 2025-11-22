@@ -39,14 +39,19 @@
   },
   "scripts": {
     "test-migrate": [
-      "php tests/_app/yii migrate --migrationPath=migrations --interactive=0",
-      "php tests/_app/yii migrate --migrationPath=tests/_app/migrations --interactive=0"
+      "php tests/_app/yii migrate --migrationPath=tests/_app/migrations --interactive=0",
+      "php tests/_app/yii migrate --migrationPath=migrations --interactive=0"
     ],
-    "test-migrate-down": [
-      "php tests/_app/yii migrate/down --migrationPath=tests/_app/migrations --interactive=0",
-      "php tests/_app/yii migrate/down --migrationPath=migrations --interactive=0"
+    "create-test-db": [
+      "mkdir -p tests/_app/runtime",
+      "rm -f tests/_app/runtime/test.db",
+      "php -r \"new PDO('sqlite:tests/_app/runtime/test.db');\"",
+      "@test-migrate"
     ],
-    "test-functional": "codecept run functional",
+    "test-functional": [
+      "@create-test-db",
+      "codecept run functional"
+    ],
     "serve": [
       "php tests/_app/yii serve"
     ]
