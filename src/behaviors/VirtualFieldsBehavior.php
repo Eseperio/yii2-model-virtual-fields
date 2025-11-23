@@ -252,23 +252,15 @@ class VirtualFieldsBehavior extends Behavior
     }
 
     /**
-     * Before update event handler - force update if virtual fields changed
+     * Before update event handler
      *
      * @param ModelEvent $event
      */
     public function beforeUpdate($event)
     {
-        // If we have modified virtual fields, ensure the update proceeds
-        if (!empty($this->_modifiedValues)) {
-            /** @var ActiveRecord $owner */
-            $owner = $this->owner;
-            // Mark at least one attribute as dirty to force update
-            $attributes = $owner->attributes();
-            if (!empty($attributes)) {
-                $firstAttr = $attributes[0];
-                $owner->setOldAttribute($firstAttr, $owner->getOldAttribute($firstAttr) . ' ');
-            }
-        }
+        // If virtual fields have been modified but no AR attributes changed,
+        // we need to ensure the update happens so afterUpdate fires
+        // We can't easily force this, so we provide a manual save method
     }
 
     /**
@@ -292,25 +284,14 @@ class VirtualFieldsBehavior extends Behavior
     }
 
     /**
-     * After delete event handler
+     * Save virtual fields - call this manually after save() if only virtual fields changed
      * 
-     * @param \yii\base\Event $event
+     * Usage: $model->save(); $model->saveVirtualFields();
+     * 
+     * This is needed when you modify only virtual fields and no AR attributes,
+     * because Yii2 won't trigger afterUpdate in that case.
      */
-    public function afterDelete($event)
-    {
-        /** @var ActiveRecord $owner */
-        $owner = $this->owner;
-        
-        $this->getService()->deleteValues(
-            $this->getEntityType(),
-            $owner->getPrimaryKey()
-        );
-    }
-
-    /**
-     * Save virtual field values
-     */
-    protected function saveVirtualFields()
+    public function saveVirtualFields()
     {
         if (empty($this->_modifiedValues)) {
             return;
@@ -318,6 +299,11 @@ class VirtualFieldsBehavior extends Behavior
 
         /** @var ActiveRecord $owner */
         $owner = $this->owner;
+
+        // Don't try to save if model is new or doesn't have a primary key yet
+        if ($owner->getIsNewRecord() || !$owner->getPrimaryKey()) {
+            return;
+        }
 
         $this->getService()->setValues(
             $this->getEntityType(),
@@ -335,6 +321,22 @@ class VirtualFieldsBehavior extends Behavior
 
         // Clear modified values after saving
         $this->_modifiedValues = [];
+    }
+
+    /**
+     * After delete event handler
+     * 
+     * @param \yii\base\Event $event
+     */
+    public function afterDelete($event)
+    {
+        /** @var ActiveRecord $owner */
+        $owner = $this->owner;
+        
+        $this->getService()->deleteValues(
+            $this->getEntityType(),
+            $owner->getPrimaryKey()
+        );
     }
 
     /**
@@ -441,6 +443,16 @@ class VirtualFieldsBehavior extends Behavior
         foreach ($definitions as $definition) {
             if ($definition->name === $name) {
                 $this->_modifiedValues[$name] = $value;
+                
+                // Touch updated_at to force an update cycle
+                /** @var ActiveRecord $owner */
+                $owner = $this->owner;
+                if (!$owner->getIsNewRecord() && $owner->getPrimaryKey()) {
+                    // If the model has TimestampBehavior with updated_at, touch it
+                    if ($owner->hasAttribute('updated_at')) {
+                        $owner->updated_at = time();
+                    }
+                }
                 return;
             }
         }
