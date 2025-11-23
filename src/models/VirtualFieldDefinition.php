@@ -61,7 +61,7 @@ class VirtualFieldDefinition extends ActiveRecord
             [['data_type'], 'string', 'max' => 32],
             [['name'], 'match', 'pattern' => '/^[a-zA-Z_][a-zA-Z0-9_]*$/', 'message' => 'Field name must start with a letter or underscore and contain only alphanumeric characters and underscores.'],
             [['name'], FieldNameValidator::class],
-            [['entity_type', 'name'], 'unique', 'targetAttribute' => ['entity_type', 'name'], 'message' => 'This field name is already defined for this entity type.'],
+            [['name'], 'unique', 'targetAttribute' => ['entity_type', 'name'], 'message' => 'This field name is already defined for this entity type.'],
             [['data_type'], 'in', 'range' => ['string', 'int', 'float', 'bool', 'date', 'datetime', 'json', 'text']],
         ];
     }
@@ -137,6 +137,10 @@ class VirtualFieldDefinition extends ActiveRecord
     public function afterDelete()
     {
         parent::afterDelete();
+
+        // Manually cascade delete values (for databases like SQLite that don't support FK)
+        VirtualFieldValue::deleteAll(['definition_id' => $this->id]);
+
         $this->invalidateCache();
     }
 

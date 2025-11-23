@@ -4,5 +4,5 @@ modules:
         - Asserts
         - Yii2:
             configFile: 'tests/_app/config/web.php'
-            transaction: true
-            cleanup: true
+            transaction: false
+            cleanup: false

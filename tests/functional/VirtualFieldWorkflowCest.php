@@ -276,14 +276,16 @@ class VirtualFieldWorkflowCest
             'label' => 'User Preferences',
             'data_type' => 'json',
         ]);
-        $field->save();
-        
+        $saved = $field->save();
+
+        $I->assertTrue($saved, 'Failed to save JSON field definition');
+
         $preferences = [
             'theme' => 'dark',
             'language' => 'en',
             'notifications' => true,
         ];
-        
+
         $model = new TestModel([
             'name' => 'JSON Test User',
             'email' => 'json@example.com',

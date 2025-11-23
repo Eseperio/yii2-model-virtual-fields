@@ -63,12 +63,36 @@ class VirtualFieldsBehavior extends Behavior
     public function events()
     {
         return [
+            ActiveRecord::EVENT_INIT => 'afterInit',
             ActiveRecord::EVENT_AFTER_FIND => 'afterFind',
             ActiveRecord::EVENT_BEFORE_VALIDATE => 'beforeValidate',
+            ActiveRecord::EVENT_BEFORE_UPDATE => 'beforeUpdate',
             ActiveRecord::EVENT_AFTER_INSERT => 'afterInsert',
             ActiveRecord::EVENT_AFTER_UPDATE => 'afterUpdate',
             ActiveRecord::EVENT_AFTER_DELETE => 'afterDelete',
         ];
+    }
+
+    /**
+     * After init event handler - add virtual fields as safe attributes
+     *
+     * @param \yii\base\Event $event
+     */
+    public function afterInit($event)
+    {
+        /** @var ActiveRecord $owner */
+        $owner = $this->owner;
+
+        // Add virtual fields as safe attributes for mass assignment
+        $definitions = $this->getDefinitions();
+        $fieldNames = array_map(function ($def) {
+            return $def->name;
+        }, $definitions);
+
+        if (!empty($fieldNames)) {
+            $validator = Validator::createValidator('safe', $owner, $fieldNames);
+            $owner->getValidators()->append($validator);
+        }
     }
 
     /**
@@ -169,6 +193,10 @@ class VirtualFieldsBehavior extends Behavior
      */
     public function afterFind($event)
     {
+        // Clear caches to reload fresh values (important for refresh())
+        $this->_values = null;
+        $this->_modifiedValues = [];
+
         // Load virtual field values
         $this->getValues();
     }
@@ -219,6 +247,26 @@ class VirtualFieldsBehavior extends Behavior
                     ]);
                     $owner->getValidators()->append($validator);
                     break;
+            }
+        }
+    }
+
+    /**
+     * Before update event handler - force update if virtual fields changed
+     *
+     * @param ModelEvent $event
+     */
+    public function beforeUpdate($event)
+    {
+        // If we have modified virtual fields, ensure the update proceeds
+        if (!empty($this->_modifiedValues)) {
+            /** @var ActiveRecord $owner */
+            $owner = $this->owner;
+            // Mark at least one attribute as dirty to force update
+            $attributes = $owner->attributes();
+            if (!empty($attributes)) {
+                $firstAttr = $attributes[0];
+                $owner->setOldAttribute($firstAttr, $owner->getOldAttribute($firstAttr) . ' ');
             }
         }
     }
@@ -277,6 +325,14 @@ class VirtualFieldsBehavior extends Behavior
             $this->_modifiedValues
         );
 
+        // Update the cached values with the modified values
+        if ($this->_values === null) {
+            $this->_values = [];
+        }
+        foreach ($this->_modifiedValues as $name => $value) {
+            $this->_values[$name] = $value;
+        }
+
         // Clear modified values after saving
         $this->_modifiedValues = [];
     }
@@ -290,9 +346,18 @@ class VirtualFieldsBehavior extends Behavior
      */
     public function canGetProperty($name, $checkVars = true)
     {
+        // Check active fields
         $definitions = $this->getDefinitions();
         
         foreach ($definitions as $definition) {
+            if ($definition->name === $name) {
+                return true;
+            }
+        }
+
+        // Check inactive fields too
+        $allDefinitions = $this->getService()->getDefinitions($this->getEntityType(), false);
+        foreach ($allDefinitions as $definition) {
             if ($definition->name === $name) {
                 return true;
             }
@@ -310,9 +375,18 @@ class VirtualFieldsBehavior extends Behavior
      */
     public function canSetProperty($name, $checkVars = true)
     {
+        // Check active fields
         $definitions = $this->getDefinitions();
         
         foreach ($definitions as $definition) {
+            if ($definition->name === $name) {
+                return true;
+            }
+        }
+
+        // Check inactive fields too
+        $allDefinitions = $this->getService()->getDefinitions($this->getEntityType(), false);
+        foreach ($allDefinitions as $definition) {
             if ($definition->name === $name) {
                 return true;
             }
@@ -340,6 +414,14 @@ class VirtualFieldsBehavior extends Behavior
 
                 $values = $this->getValues();
                 return $values[$name] ?? null;
+            }
+        }
+
+        // Check if field exists but is inactive - return null instead of throwing exception
+        $allDefinitions = $this->getService()->getDefinitions($this->getEntityType(), false);
+        foreach ($allDefinitions as $definition) {
+            if ($definition->name === $name && !$definition->active) {
+                return null;
             }
         }
 
@@ -377,6 +459,18 @@ class VirtualFieldsBehavior extends Behavior
         return array_map(function ($def) {
             return $def->name;
         }, $definitions);
+    }
+
+    /**
+     * Override to support mass assignment of virtual fields
+     *
+     * @param string $name
+     * @param bool $checkVars
+     * @return bool
+     */
+    public function hasProperty($name, $checkVars = true)
+    {
+        return $this->canGetProperty($name, $checkVars) || parent::hasProperty($name, $checkVars);
     }
 
     /**

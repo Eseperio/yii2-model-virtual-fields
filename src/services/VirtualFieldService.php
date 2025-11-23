@@ -249,6 +249,19 @@ class VirtualFieldService extends Component
             return false;
         }
 
+        // Handle null values - delete record if value is null
+        if ($value === null) {
+            VirtualFieldValue::deleteAll([
+                'entity_type' => $entityType,
+                'entity_id' => $entityId,
+                'definition_id' => $definition->id,
+            ]);
+            return true;
+        }
+
+        // Cast value to appropriate type before serialization
+        $value = $this->castValue($value, $definition->data_type);
+
         // Find or create value record
         $valueRecord = VirtualFieldValue::findOne([
             'entity_type' => $entityType,

@@ -50,7 +50,7 @@
     ],
     "test-functional": [
       "@create-test-db",
-      "codecept run functional"
+      "codecept run functional --no-artifacts"
     ],
     "serve": [
       "php tests/_app/yii serve"
