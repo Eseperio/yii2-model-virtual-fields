@@ -277,8 +277,19 @@ class VirtualFieldService extends Component
             ]);
         }
 
-        $valueRecord->value = $this->serializeValue($value, $definition->data_type);
-        return $valueRecord->save();
+        $serializedValue = $this->serializeValue($value, $definition->data_type);
+        
+        // Always update the value, even if it appears unchanged
+        // Use updateAttributes to force the update
+        if (!$valueRecord->getIsNewRecord()) {
+            // For existing records, use updateAttributes to bypass dirty checking
+            $valueRecord->value = $serializedValue;
+            return $valueRecord->updateAttributes(['value']);
+        } else {
+            // For new records, use normal save
+            $valueRecord->value = $serializedValue;
+            return $valueRecord->save();
+        }
     }
 
     /**
