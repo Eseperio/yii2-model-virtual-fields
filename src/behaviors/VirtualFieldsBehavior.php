@@ -58,6 +58,11 @@ class VirtualFieldsBehavior extends Behavior
     private $_service;
 
     /**
+     * @var bool Flag to track if afterUpdate event was triggered
+     */
+    private $_updateEventFired = false;
+
+    /**
      * {@inheritdoc}
      */
     public function events()
@@ -258,9 +263,8 @@ class VirtualFieldsBehavior extends Behavior
      */
     public function beforeUpdate($event)
     {
-        // If virtual fields have been modified but no AR attributes changed,
-        // we need to ensure the update happens so afterUpdate fires
-        // We can't easily force this, so we provide a manual save method
+        // Mark that we're in an update operation
+        $this->_updateEventFired = false;
     }
 
     /**
@@ -280,6 +284,7 @@ class VirtualFieldsBehavior extends Behavior
      */
     public function afterUpdate($event)
     {
+        $this->_updateEventFired = true;
         $this->saveVirtualFields();
     }
 
@@ -290,6 +295,9 @@ class VirtualFieldsBehavior extends Behavior
      * 
      * This is needed when you modify only virtual fields and no AR attributes,
      * because Yii2 won't trigger afterUpdate in that case.
+     * 
+     * However, this method is now called automatically via ensureVirtualFieldsSaved()
+     * which should be called right after save() operations.
      */
     public function saveVirtualFields()
     {
@@ -321,6 +329,40 @@ class VirtualFieldsBehavior extends Behavior
 
         // Clear modified values after saving
         $this->_modifiedValues = [];
+    }
+
+    /**
+     * Ensure virtual fields are saved after a save() operation
+     * 
+     * This method should be called after $model->save() to ensure that
+     * virtual field changes are persisted even if afterUpdate didn't fire.
+     * 
+     * Usage: $model->save(); $model->ensureVirtualFieldsSaved();
+     * 
+     * Or better yet, wrap it: $model->save() && $model->ensureVirtualFieldsSaved();
+     * 
+     * @return bool Whether virtual fields were saved
+     */
+    public function ensureVirtualFieldsSaved()
+    {
+        // If we have modified values but update event didn't fire, save them now
+        if (!empty($this->_modifiedValues) && !$this->_updateEventFired) {
+            /** @var ActiveRecord $owner */
+            $owner = $this->owner;
+            
+            // Only for existing records
+            if (!$owner->getIsNewRecord() && $owner->getPrimaryKey()) {
+                $this->saveVirtualFields();
+                
+                // Trigger the afterUpdate event so other behaviors and code
+                // that depend on it can execute properly
+                $owner->trigger(ActiveRecord::EVENT_AFTER_UPDATE);
+                
+                return true;
+            }
+        }
+        
+        return false;
     }
 
     /**
@@ -443,6 +485,9 @@ class VirtualFieldsBehavior extends Behavior
         foreach ($definitions as $definition) {
             if ($definition->name === $name) {
                 $this->_modifiedValues[$name] = $value;
+                
+                // Reset the update event flag when a virtual field is modified
+                $this->_updateEventFired = false;
                 
                 // Touch updated_at to force an update cycle
                 /** @var ActiveRecord $owner */
