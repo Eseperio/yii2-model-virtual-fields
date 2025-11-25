@@ -53,7 +53,7 @@
       "codecept run functional --no-artifacts"
     ],
     "serve": [
-      "php tests/_app/yii serve"
+      "php tests/_app/yii serve --port=7070"
     ]
   },
   "extra": {
