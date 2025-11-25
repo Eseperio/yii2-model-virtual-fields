@@ -445,16 +445,6 @@ class VirtualFieldsBehavior extends Behavior
         foreach ($definitions as $definition) {
             if ($definition->name === $name) {
                 $this->_modifiedValues[$name] = $value;
-                
-                // Touch updated_at to force an update cycle
-                /** @var ActiveRecord $owner */
-                $owner = $this->owner;
-                if (!$owner->getIsNewRecord() && $owner->getPrimaryKey()) {
-                    // If the model has TimestampBehavior with updated_at, touch it
-                    if ($owner->hasAttribute('updated_at')) {
-                        $owner->updated_at = time();
-                    }
-                }
                 return;
             }
         }
