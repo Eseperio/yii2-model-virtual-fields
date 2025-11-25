@@ -279,14 +279,6 @@ class VirtualFieldService extends Component
 
         $serializedValue = $this->serializeValue($value, $definition->data_type);
         $valueRecord->value = $serializedValue;
-        
-        // Use updateAttributes for existing records to force the update
-        // Pass name=>value to ensure the attribute is set and marked dirty
-        if (!$valueRecord->getIsNewRecord()) {
-            $rows = $valueRecord->updateAttributes(['value' => $serializedValue]);
-            // Normalize to boolean result
-            return $rows >= 0;
-        }
 
         return $valueRecord->save();
     }
