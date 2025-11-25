@@ -1,0 +1,8 @@
+actor: FunctionalTester
+modules:
+    enabled:
+        - Asserts
+        - Yii2:
+            configFile: 'tests/_app/config/web.php'
+            transaction: false
+            cleanup: false

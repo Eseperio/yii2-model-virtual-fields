@@ -1,0 +1,67 @@
+{
+  "name": "eseperio/yii2-model-virtual-fields",
+  "description": "Yii2 extension for adding virtual (dynamic) fields to ActiveRecord models without modifying database tables",
+  "type": "yii2-extension",
+  "keywords": [
+    "yii2",
+    "extension",
+    "virtual fields",
+    "dynamic fields",
+    "activerecord"
+  ],
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Eseperio",
+      "email": "info@eseperio.com"
+    }
+  ],
+  "require": {
+    "php": ">=8.0",
+    "yiisoft/yii2": "~2.0.14"
+  },
+  "require-dev": {
+    "codeception/codeception": "^4.0 || ^5.0",
+    "codeception/module-yii2": "^1.0",
+    "codeception/module-asserts": "^1.0 || ^3.0",
+    "yidas/yii2-bower-asset": "2.0.13"
+  },
+  "autoload": {
+    "psr-4": {
+      "eseperio\\virtualfields\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "eseperio\\virtualfields\\tests\\": "tests/",
+      "tests\\": "tests/"
+    }
+  },
+  "scripts": {
+    "test-migrate": [
+      "php tests/_app/yii migrate --migrationPath=tests/_app/migrations --interactive=0",
+      "php tests/_app/yii migrate --migrationPath=migrations --interactive=0"
+    ],
+    "create-test-db": [
+      "mkdir -p tests/_app/runtime",
+      "rm -f tests/_app/runtime/test.db",
+      "php -r \"new PDO('sqlite:tests/_app/runtime/test.db');\"",
+      "@test-migrate"
+    ],
+    "test-functional": [
+      "@create-test-db",
+      "codecept run functional --no-artifacts"
+    ],
+    "serve": [
+      "php tests/_app/yii serve --port=7070"
+    ]
+  },
+  "extra": {
+    "bootstrap": "eseperio\\virtualfields\\Module"
+  },
+  "config": {
+    "allow-plugins": {
+      "yiisoft/yii2-composer": true
+    }
+  }
+}
