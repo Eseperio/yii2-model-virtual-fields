@@ -364,9 +364,7 @@ class VirtualFieldService extends Component
             
             // Handle null values - batch delete
             if (!empty($nullFields)) {
-                $nullDefinitionIds = array_map(function ($def) {
-                    return $def->id;
-                }, $nullFields);
+                $nullDefinitionIds = array_column($nullFields, 'id');
                 
                 VirtualFieldValue::deleteAll([
                     'entity_type' => $entityType,
