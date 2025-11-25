@@ -440,4 +440,129 @@ class VirtualFieldWorkflowCest
         $retrieved = TestModel::findOne($model->id);
         $I->assertEquals('test value', $retrieved->service_test);
     }
+
+    public function testBatchSetValuesOptimization(FunctionalTester $I)
+    {
+        $I->wantTo('Test that setValues handles batch updates correctly');
+        
+        // Create multiple field definitions
+        $fields = [];
+        for ($i = 1; $i <= 10; $i++) {
+            $field = new VirtualFieldDefinition([
+                'entity_type' => 1,
+                'name' => "batch_field_{$i}",
+                'label' => "Batch Field {$i}",
+                'data_type' => 'string',
+            ]);
+            $I->assertTrue($field->save(), "Failed to save batch_field_{$i}");
+            $fields[] = $field;
+        }
+        
+        // Create model
+        $model = new TestModel([
+            'name' => 'Batch Test User',
+            'email' => 'batch@example.com',
+        ]);
+        $model->save();
+        
+        // Use service to set all values at once (batched)
+        $module = Yii::$app->getModule('virtualFields');
+        $service = $module->get('service');
+        
+        $valuesToSet = [];
+        for ($i = 1; $i <= 10; $i++) {
+            $valuesToSet["batch_field_{$i}"] = "value_{$i}";
+        }
+        
+        // Set all values in batch
+        $result = $service->setValues(1, $model->id, $valuesToSet);
+        $I->assertTrue($result, 'Batch setValues should return true');
+        
+        // Verify all values were saved correctly
+        $savedValues = $service->getValues(1, $model->id);
+        for ($i = 1; $i <= 10; $i++) {
+            $I->assertArrayHasKey("batch_field_{$i}", $savedValues);
+            $I->assertEquals("value_{$i}", $savedValues["batch_field_{$i}"]);
+        }
+        
+        // Update some values and set some to null (to test batch delete)
+        $updateValues = [
+            'batch_field_1' => 'updated_value_1',
+            'batch_field_2' => null, // Should be deleted
+            'batch_field_3' => 'updated_value_3',
+            'batch_field_4' => null, // Should be deleted
+        ];
+        
+        $result = $service->setValues(1, $model->id, $updateValues);
+        $I->assertTrue($result, 'Batch update should return true');
+        
+        // Verify updates
+        $updatedValues = $service->getValues(1, $model->id);
+        $I->assertEquals('updated_value_1', $updatedValues['batch_field_1']);
+        $I->assertNull($updatedValues['batch_field_2']); // Default null when deleted
+        $I->assertEquals('updated_value_3', $updatedValues['batch_field_3']);
+        $I->assertNull($updatedValues['batch_field_4']); // Default null when deleted
+        
+        // Verify untouched values are still intact
+        $I->assertEquals('value_5', $updatedValues['batch_field_5']);
+        $I->assertEquals('value_10', $updatedValues['batch_field_10']);
+    }
+
+    public function testBatchSetValuesWithInvalidFields(FunctionalTester $I)
+    {
+        $I->wantTo('Test that setValues handles non-existent fields gracefully');
+        
+        // Create one field definition
+        $field = new VirtualFieldDefinition([
+            'entity_type' => 1,
+            'name' => 'valid_field',
+            'label' => 'Valid Field',
+            'data_type' => 'string',
+        ]);
+        $field->save();
+        
+        // Create model
+        $model = new TestModel([
+            'name' => 'Invalid Field Test User',
+            'email' => 'invalid@example.com',
+        ]);
+        $model->save();
+        
+        // Use service to set values including non-existent field
+        $module = Yii::$app->getModule('virtualFields');
+        $service = $module->get('service');
+        
+        $valuesToSet = [
+            'valid_field' => 'valid_value',
+            'non_existent_field' => 'should_be_ignored',
+        ];
+        
+        // Set values - should succeed for valid field, ignore invalid
+        $result = $service->setValues(1, $model->id, $valuesToSet);
+        $I->assertTrue($result, 'setValues should succeed even with non-existent fields');
+        
+        // Verify only valid field was saved
+        $savedValues = $service->getValues(1, $model->id);
+        $I->assertEquals('valid_value', $savedValues['valid_field']);
+        $I->assertArrayNotHasKey('non_existent_field', $savedValues);
+    }
+
+    public function testBatchSetValuesWithEmptyArray(FunctionalTester $I)
+    {
+        $I->wantTo('Test that setValues handles empty array');
+        
+        // Create model
+        $model = new TestModel([
+            'name' => 'Empty Array Test User',
+            'email' => 'empty@example.com',
+        ]);
+        $model->save();
+        
+        $module = Yii::$app->getModule('virtualFields');
+        $service = $module->get('service');
+        
+        // Set empty values - should return true without errors
+        $result = $service->setValues(1, $model->id, []);
+        $I->assertTrue($result, 'setValues with empty array should return true');
+    }
 }

@@ -284,7 +284,13 @@ class VirtualFieldService extends Component
     }
 
     /**
-     * Set multiple field values at once
+     * Set multiple field values at once (optimized for batch operations)
+     * 
+     * This method optimizes database operations by:
+     * 1. Fetching all definitions once (cached)
+     * 2. Batch fetching all existing value records in one query
+     * 3. Using a transaction for atomicity
+     * 4. Performing batch delete for null values
      * 
      * @param int $entityType
      * @param int $entityId
@@ -293,15 +299,120 @@ class VirtualFieldService extends Component
      */
     public function setValues($entityType, $entityId, $values)
     {
-        $success = true;
+        if (empty($values)) {
+            return true;
+        }
+
+        // Get all definitions at once (already cached by getDefinitions)
+        $definitions = $this->getDefinitions($entityType);
+        
+        // Build a map of definition name to definition for quick lookup
+        $definitionMap = [];
+        foreach ($definitions as $definition) {
+            $definitionMap[$definition->name] = $definition;
+        }
+
+        // Filter out fields that don't have a definition
+        $validFields = [];
+        $nullFields = [];
         
         foreach ($values as $fieldName => $value) {
-            if (!$this->setValue($entityType, $entityId, $fieldName, $value)) {
-                $success = false;
+            if (!isset($definitionMap[$fieldName])) {
+                continue; // Skip fields without definition
+            }
+            
+            if ($value === null) {
+                $nullFields[$fieldName] = $definitionMap[$fieldName];
+            } else {
+                $validFields[$fieldName] = [
+                    'value' => $value,
+                    'definition' => $definitionMap[$fieldName],
+                ];
             }
         }
 
-        return $success;
+        // If no valid fields to process, return early
+        if (empty($validFields) && empty($nullFields)) {
+            return true;
+        }
+
+        // Batch fetch existing value records in one query
+        $allDefinitionIds = [];
+        foreach ($validFields as $data) {
+            $allDefinitionIds[] = $data['definition']->id;
+        }
+        foreach ($nullFields as $definition) {
+            $allDefinitionIds[] = $definition->id;
+        }
+        
+        $existingRecords = [];
+        if (!empty($allDefinitionIds)) {
+            $existingRecords = VirtualFieldValue::find()
+                ->where([
+                    'entity_type' => $entityType,
+                    'entity_id' => $entityId,
+                    'definition_id' => $allDefinitionIds,
+                ])
+                ->indexBy('definition_id')
+                ->all();
+        }
+
+        // Use transaction for atomicity
+        $transaction = Yii::$app->db->beginTransaction();
+        try {
+            $success = true;
+            
+            // Handle null values - batch delete
+            if (!empty($nullFields)) {
+                $nullDefinitionIds = array_map(function ($def) {
+                    return $def->id;
+                }, $nullFields);
+                
+                VirtualFieldValue::deleteAll([
+                    'entity_type' => $entityType,
+                    'entity_id' => $entityId,
+                    'definition_id' => $nullDefinitionIds,
+                ]);
+            }
+
+            // Process non-null values
+            foreach ($validFields as $fieldName => $data) {
+                $definition = $data['definition'];
+                $value = $data['value'];
+                
+                // Cast value to appropriate type before serialization
+                $value = $this->castValue($value, $definition->data_type);
+                $serializedValue = $this->serializeValue($value, $definition->data_type);
+
+                // Check if record exists
+                $valueRecord = $existingRecords[$definition->id] ?? null;
+                
+                if (!$valueRecord) {
+                    $valueRecord = new VirtualFieldValue([
+                        'entity_type' => $entityType,
+                        'entity_id' => $entityId,
+                        'definition_id' => $definition->id,
+                    ]);
+                }
+
+                $valueRecord->value = $serializedValue;
+
+                if (!$valueRecord->save()) {
+                    $success = false;
+                }
+            }
+
+            if ($success) {
+                $transaction->commit();
+            } else {
+                $transaction->rollBack();
+            }
+
+            return $success;
+        } catch (\Exception $e) {
+            $transaction->rollBack();
+            throw $e;
+        }
     }
 
     /**
