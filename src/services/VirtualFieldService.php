@@ -281,12 +281,14 @@ class VirtualFieldService extends Component
         $valueRecord->value = $serializedValue;
         
         // Use updateAttributes for existing records to force the update
-        // This bypasses Yii2's dirty attribute checking
+        // Pass name=>value to ensure the attribute is set and marked dirty
         if (!$valueRecord->getIsNewRecord()) {
-            return $valueRecord->updateAttributes(['value']);
-        } else {
-            return $valueRecord->save();
+            $rows = $valueRecord->updateAttributes(['value' => $serializedValue]);
+            // Normalize to boolean result
+            return $rows >= 0;
         }
+
+        return $valueRecord->save();
     }
 
     /**

@@ -65,6 +65,8 @@ class VirtualFieldsBehavior extends Behavior
         return [
             ActiveRecord::EVENT_INIT => 'afterInit',
             ActiveRecord::EVENT_AFTER_FIND => 'afterFind',
+            // Ensure caches are cleared when calling refresh() on AR instances
+            ActiveRecord::EVENT_AFTER_REFRESH => 'afterFind',
             ActiveRecord::EVENT_BEFORE_VALIDATE => 'beforeValidate',
             ActiveRecord::EVENT_BEFORE_UPDATE => 'beforeUpdate',
             ActiveRecord::EVENT_AFTER_INSERT => 'afterInsert',
