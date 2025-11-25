@@ -35,7 +35,6 @@ class DataTypeHandlingCest
         ]);
         $product->sku = 'PROD-12345';
         $product->save();
-        $product->ensureVirtualFieldsSaved();
 
         $retrieved = Product::findOne($product->id);
         $I->assertIsString($retrieved->sku);
@@ -60,7 +59,6 @@ class DataTypeHandlingCest
         ]);
         $product->stock_quantity = 150;
         $product->save();
-        $product->ensureVirtualFieldsSaved();
 
         $retrieved = Product::findOne($product->id);
         $I->assertIsInt($retrieved->stock_quantity);
@@ -70,7 +68,6 @@ class DataTypeHandlingCest
         $product->stock_quantity = '200';
 
         $I->assertTrue($product->save());
-        $product->ensureVirtualFieldsSaved();
         $retrieved->refresh();
         $I->assertIsInt($retrieved->stock_quantity);
         $I->assertEquals(200, $retrieved->stock_quantity);
@@ -94,7 +91,7 @@ class DataTypeHandlingCest
         ]);
         $product->weight = 2.5;
         $product->save();
-        $product->ensureVirtualFieldsSaved();
+
 
         $retrieved = Product::findOne($product->id);
         $I->assertIsFloat($retrieved->weight);
@@ -120,7 +117,6 @@ class DataTypeHandlingCest
         ]);
         $product->in_stock = true;
         $product->save();
-        $product->ensureVirtualFieldsSaved();
 
         $retrieved = Product::findOne($product->id);
         $I->assertIsBool($retrieved->in_stock);
@@ -129,7 +125,6 @@ class DataTypeHandlingCest
         // Test false value
         $product->in_stock = false;
         $product->save();
-        $product->ensureVirtualFieldsSaved();
 
         $retrieved->refresh();
         $I->assertIsBool($retrieved->in_stock);
@@ -154,7 +149,6 @@ class DataTypeHandlingCest
         ]);
         $product->release_date = '2024-01-15';
         $product->save();
-        $product->ensureVirtualFieldsSaved();
 
         $retrieved = Product::findOne($product->id);
         $I->assertEquals('2024-01-15', $retrieved->release_date);
@@ -178,7 +172,6 @@ class DataTypeHandlingCest
         ]);
         $product->last_restock = '2024-01-15 14:30:00';
         $product->save();
-        $product->ensureVirtualFieldsSaved();
 
         $retrieved = Product::findOne($product->id);
         $I->assertEquals('2024-01-15 14:30:00', $retrieved->last_restock);
@@ -208,7 +201,6 @@ class DataTypeHandlingCest
         ]);
         $product->specifications = $specs;
         $product->save();
-        $product->ensureVirtualFieldsSaved();
 
         $retrieved = Product::findOne($product->id);
         $I->assertIsArray($retrieved->specifications);
@@ -238,7 +230,6 @@ class DataTypeHandlingCest
         ]);
         $product->description = $longText;
         $product->save();
-        $product->ensureVirtualFieldsSaved();
 
         $retrieved = Product::findOne($product->id);
         $I->assertEquals($longText, $retrieved->description);
@@ -278,7 +269,6 @@ class DataTypeHandlingCest
         $product->bool_field = true;
         $product->json_field = ['key' => 'value', 'number' => 123];
         $product->save();
-        $product->ensureVirtualFieldsSaved();
 
         // Retrieve and verify types
         $retrieved = Product::findOne($product->id);
@@ -314,7 +304,6 @@ class DataTypeHandlingCest
             'price' => 99.99,
         ]);
         $product->save();
-        $product->ensureVirtualFieldsSaved();
 
         // Should be null since not set
         $retrieved = Product::findOne($product->id);
@@ -323,7 +312,6 @@ class DataTypeHandlingCest
         // Set a value
         $product->optional_field = 'some value';
         $product->save();
-        $product->ensureVirtualFieldsSaved();
 
         $retrieved->refresh();
         $I->assertEquals('some value', $retrieved->optional_field);
@@ -331,7 +319,6 @@ class DataTypeHandlingCest
         // Set to null explicitly
         $product->optional_field = null;
         $product->save();
-        $product->ensureVirtualFieldsSaved();
 
         $retrieved->refresh();
         $I->assertNull($retrieved->optional_field);
@@ -355,7 +342,6 @@ class DataTypeHandlingCest
         ]);
         $product->notes = '';
         $product->save();
-        $product->ensureVirtualFieldsSaved();
 
         $retrieved = Product::findOne($product->id);
         $I->assertIsString($retrieved->notes);
