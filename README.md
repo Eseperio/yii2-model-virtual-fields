@@ -151,31 +151,9 @@ $user->load(Yii::$app->request->post());
 $user->save();
 ```
 
-**Important: Saving Virtual Fields Only**
+Virtual fields are automatically saved when you call `save()` on the model. The behavior hooks into Yii2's `afterInsert` and `afterUpdate` events to persist virtual field changes.
 
-When you modify **only virtual fields** (no native AR attributes), you need to call `ensureVirtualFieldsSaved()` after `save()` to ensure changes are persisted:
-
-```php
-$user = User::findOne(1);
-
-// Only modifying virtual fields
-$user->phone_number = '+1234567890';
-$user->preferences = ['theme' => 'dark'];
-
-// Must call ensureVirtualFieldsSaved() to persist changes
-$user->save();
-$user->ensureVirtualFieldsSaved();
-
-// Or in one line:
-$user->save() && $user->ensureVirtualFieldsSaved();
-```
-
-**Why?** When only virtual fields change, Yii2's `save()` may return early without triggering the `afterUpdate` event (since no AR attributes are "dirty"). The `ensureVirtualFieldsSaved()` method detects this and manually saves the virtual fields.
-
-**When it's NOT needed:**
-- When you also modify at least one native AR attribute (e.g., `$user->username = 'newname'`)
-- For new records (inserts always trigger the proper events)
-- When using mass assignment with mixed fields
+**Note:** A `saveVirtualFields()` method is also available if you need to manually trigger saving of virtual fields, though this is rarely necessary in typical usage.
 
 ### Using in Forms
 
