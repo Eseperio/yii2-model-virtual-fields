@@ -153,18 +153,7 @@ $user->save();
 
 Virtual fields are automatically saved when you call `save()` on the model. The behavior hooks into Yii2's `afterInsert` and `afterUpdate` events to persist virtual field changes.
 
-**Manual Save (Edge Cases)**
-
-In rare scenarios where automatic saving doesn't work as expected, you can manually save virtual fields:
-
-```php
-$user = User::findOne(1);
-$user->phone_number = '+1234567890';
-$user->save();
-$user->saveVirtualFields(); // Manual save if needed
-```
-
-This is typically not necessary for normal usage, as the behavior handles saving automatically.
+**Note:** A `saveVirtualFields()` method is also available if you need to manually trigger saving of virtual fields, though this is rarely necessary in typical usage.
 
 ### Using in Forms
 
