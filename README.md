@@ -153,7 +153,7 @@ $user->save();
 
 **Important: Saving Virtual Fields Only**
 
-When you modify **only virtual fields** (no native AR attributes), you need to call `ensureVirtualFieldsSaved()` after `save()` to ensure changes are persisted:
+When you modify **only virtual fields** (no native AR attributes), you need to call `saveVirtualFields()` after `save()` to ensure changes are persisted:
 
 ```php
 $user = User::findOne(1);
@@ -162,15 +162,15 @@ $user = User::findOne(1);
 $user->phone_number = '+1234567890';
 $user->preferences = ['theme' => 'dark'];
 
-// Must call ensureVirtualFieldsSaved() to persist changes
+// Must call saveVirtualFields() to persist changes
 $user->save();
-$user->ensureVirtualFieldsSaved();
+$user->saveVirtualFields();
 
 // Or in one line:
-$user->save() && $user->ensureVirtualFieldsSaved();
+$user->save() && $user->saveVirtualFields();
 ```
 
-**Why?** When only virtual fields change, Yii2's `save()` may return early without triggering the `afterUpdate` event (since no AR attributes are "dirty"). The `ensureVirtualFieldsSaved()` method detects this and manually saves the virtual fields.
+**Why?** When only virtual fields change, Yii2's `save()` may return early without triggering the `afterUpdate` event (since no AR attributes are "dirty"). The `saveVirtualFields()` method detects this and manually saves the virtual fields.
 
 **When it's NOT needed:**
 - When you also modify at least one native AR attribute (e.g., `$user->username = 'newname'`)
