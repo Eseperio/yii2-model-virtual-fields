@@ -175,9 +175,10 @@ class VirtualFieldsBehavior extends Behavior
         if ($this->_values === null) {
             /** @var ActiveRecord $owner */
             $owner = $this->owner;
-            
+
             if ($owner->getIsNewRecord() || !$owner->getPrimaryKey()) {
-                $this->_values = [];
+                // For new records, pre-fill defaults so forms display initial values
+                $this->_values = $this->buildDefaultValues($this->getDefinitions());
             } else {
                 $this->_values = $this->getService()->getValues(
                     $this->getEntityType(),
@@ -488,5 +489,27 @@ class VirtualFieldsBehavior extends Behavior
         
         // Merge with modified values
         return array_merge($values, $this->_modifiedValues);
+    }
+
+    /**
+     * Build default values array for provided definitions.
+     *
+     * @param VirtualFieldDefinition[] $definitions
+     * @return array
+     * @throws InvalidConfigException
+     */
+    private function buildDefaultValues(array $definitions): array
+    {
+        $defaults = [];
+        $service = $this->getService();
+
+        foreach ($definitions as $definition) {
+            $defaults[$definition->name] = $service->deserializeValue(
+                $definition->default_value,
+                $definition->data_type
+            );
+        }
+
+        return $defaults;
     }
 }
