@@ -249,8 +249,8 @@ class VirtualFieldService extends Component
             return false;
         }
 
-        // Handle null values - delete record if value is null
-        if ($value === null) {
+        // Handle empty values - delete record if value is null or blank
+        if ($value === null || (is_string($value) && trim($value) === '') || (is_array($value) && $value === [])) {
             VirtualFieldValue::deleteAll([
                 'entity_type' => $entityType,
                 'entity_id' => $entityId,
